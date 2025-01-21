@@ -2,9 +2,7 @@ package transactors
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/billowdev/clog"
 
@@ -17,12 +15,6 @@ type TransactorImpl struct {
 
 func (d *TransactorImpl) GetDatabaseConnection() *gorm.DB {
 	return d.db
-}
-
-func (d *TransactorImpl) IsTransactionActive() bool {
-	// Check if the connection pool is a transactional type
-	_, ok := d.db.Statement.ConnPool.(*sql.Tx)
-	return ok
 }
 
 // BeginTransaction implements IDatabasePorts.
@@ -77,21 +69,4 @@ func (d *TransactorImpl) CommitTransaction(tx *gorm.DB) error {
 		return fmt.Errorf("failed to commit transaction and rolled back: %w", err)
 	}
 	return nil
-}
-
-type ITransactors interface {
-	IsTransactionActive() bool
-	GetDatabaseConnection() *gorm.DB
-	WithAtomicCommitCondition(ctx context.Context, commitCondition func() bool, timeout time.Duration, tFunc func(txCtx context.Context) error) error
-	WithAtomicBasicCondition(ctx context.Context, isCommit bool, timeout time.Duration, tFunc func(txCtx context.Context) error) error
-	WithAtomic(ctx context.Context, timeout time.Duration, tFunc func(txCtx context.Context) error) error
-
-	BeginTransaction() (*gorm.DB, error)
-	BeginTransactionWithContext(ctx context.Context) (*gorm.DB, error)
-	RollbackTransaction(tx *gorm.DB) error
-	CommitTransaction(tx *gorm.DB) error
-}
-
-func NewTransactorRepo(db *gorm.DB) ITransactors {
-	return &TransactorImpl{db: db}
 }
